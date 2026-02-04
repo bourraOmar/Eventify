@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  # Service Base de données
+  mongo:
+    image: mongo:6.0
+    container_name: event_db
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: rootpassword
+    volumes:
+      - mongo_data:/data/db
+
+  # Interface visuelle (Optionnel mais recommandé pour le dev)
+  mongo-express:
+    image: mongo-express
+    container_name: event_db_ui
+    restart: always
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: rootpassword
+      ME_CONFIG_MONGODB_URL: mongodb://root:rootpassword@mongo:27017/
+    depends_on:
+      - mongo
+
+  # Backend (NestJS)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: event_backend
+    restart: always
+    ports:
+      - "4000:3000"
+    environment:
+      # Connection URL for MongoDB container
+      MONGO_URI: mongodb://root:rootpassword@mongo:27017/eventify?authSource=admin
+      JWT_SECRET: secretKey_change_me
+    depends_on:
+      - mongo
+
+  # Frontend (Next.js)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: event_frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      # Available to the browser (Client Side)
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+    depends_on:
+      - backend
+
+volumes:
+  mongo_data:
