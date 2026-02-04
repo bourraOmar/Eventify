@@ -28,5 +28,36 @@ services:
     depends_on:
       - mongo
 
+  # Backend (NestJS)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: event_backend
+    restart: always
+    ports:
+      - "4000:3000"
+    environment:
+      # Connection URL for MongoDB container
+      MONGO_URI: mongodb://root:rootpassword@mongo:27017/eventify?authSource=admin
+      JWT_SECRET: secretKey_change_me
+    depends_on:
+      - mongo
+
+  # Frontend (Next.js)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: event_frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      # Available to the browser (Client Side)
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+    depends_on:
+      - backend
+
 volumes:
   mongo_data:
