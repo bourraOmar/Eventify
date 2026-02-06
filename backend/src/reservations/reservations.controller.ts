@@ -56,7 +56,7 @@ export class ReservationsController {
   async downloadTicket(
     @Request() req, 
     @Param('id') id: string,
-    @Res() res: Response // Inject Response object to handle stream
+    @Res() res: Response 
   ) {
     const buffer = await this.reservationsService.generateTicket(id, req.user.userId);
 
