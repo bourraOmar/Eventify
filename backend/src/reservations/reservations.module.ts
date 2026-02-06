@@ -12,10 +12,10 @@ import { Event, EventSchema } from '../events/schemas/event.schema';
       { name: Reservation.name, schema: ReservationSchema },
       { name: Event.name, schema: EventSchema },
     ]),
-    EventsModule, 
+    EventsModule,
   ],
   controllers: [ReservationsController],
   providers: [ReservationsService],
-  exports: [ReservationsService]
+  exports: [ReservationsService],
 })
 export class ReservationsModule {}

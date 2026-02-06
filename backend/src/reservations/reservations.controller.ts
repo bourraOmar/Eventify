@@ -1,5 +1,15 @@
-import { 
-  Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, Query, Res 
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  Request,
+  Query,
+  Res,
 } from '@nestjs/common';
 import { ReservationsService } from './reservations.service';
 import { CreateReservationDto } from './dto/create-reservation.dto';
@@ -8,10 +18,10 @@ import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/schemas/user.schema';
-import { Response } from 'express';
+import type { Response } from 'express';
 
 @Controller('reservations')
-@UseGuards(AuthGuard('jwt'), RolesGuard) 
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 export class ReservationsController {
   constructor(private readonly reservationsService: ReservationsService) {}
 
@@ -19,12 +29,14 @@ export class ReservationsController {
   @Post()
   @Roles(UserRole.PARTICIPANT)
   create(
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-    @Request() req: any, 
-    @Body() createReservationDto: CreateReservationDto
+    @Request() req: any,
+    @Body() createReservationDto: CreateReservationDto,
   ) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument
-    return this.reservationsService.create(req.user.userId, createReservationDto);
+    return this.reservationsService.create(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument
+      req.user.userId,
+      createReservationDto,
+    );
   }
 
   // Participant: Get my history
@@ -44,7 +56,10 @@ export class ReservationsController {
   // Admin: Validate or Refuse
   @Patch(':id/status')
   @Roles(UserRole.ADMIN)
-  updateStatus(@Param('id') id: string, @Body() body: UpdateReservationStatusDto) {
+  updateStatus(
+    @Param('id') id: string,
+    @Body() body: UpdateReservationStatusDto,
+  ) {
     return this.reservationsService.updateStatus(id, body.status);
   }
 
@@ -60,12 +75,15 @@ export class ReservationsController {
   @Get(':id/ticket')
   @Roles(UserRole.PARTICIPANT)
   async downloadTicket(
-    @Request() req: any, 
+    @Request() req: any,
     @Param('id') id: string,
-    @Res() res: Response
+    @Res() res: Response,
   ) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    const buffer = await this.reservationsService.generateTicket(id, req.user.userId);
+    const buffer = await this.reservationsService.generateTicket(
+      id,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument
+      req.user.userId,
+    );
 
     res.set({
       'Content-Type': 'application/pdf',
