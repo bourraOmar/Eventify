@@ -1,0 +1,16 @@
+// ... imports ...
+/*
+ ... existing imports ...
+*/
+
+describe('AuthService', () => {
+    // ...
+    // ...
+  describe('register', () => {
+    it('should successfully register a user', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      jest.spyOn(model, 'findOne').mockResolvedValue(null);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      jest.spyOn(model, 'create').mockResolvedValue(mockUser);
+      jest.spyOn(bcrypt, 'hash').mockResolvedValue('hashedPassword' as never);
+// ...

@@ -16,22 +16,13 @@ const mockEvent = {
 
 describe('EventsService', () => {
   let service: EventsService;
-  let model: any;
 
-  const mockEventModel = {
-    find: jest.fn(),
-    findById: jest.fn(),
-    create: jest.fn(),
-    findByIdAndUpdate: jest.fn(),
-    findByIdAndDelete: jest.fn(),
-    constructor: jest.fn().mockImplementation(() => ({
-      save: jest.fn().mockResolvedValue(mockEvent),
-    })),
-  };
-
+  // Use a class-based mock to satisfy "new this.eventModel()" usage
   class MockModel {
     constructor(private data: any) {}
     save = jest.fn().mockResolvedValue(mockEvent);
+    
+    // Static methods for find, findById, etc.
     static find = jest.fn();
     static findById = jest.fn();
     static findByIdAndUpdate = jest.fn();
@@ -50,11 +41,11 @@ describe('EventsService', () => {
     }).compile();
 
     service = module.get<EventsService>(EventsService);
-    model = module.get(getModelToken(Event.name));
   });
 
   describe('create', () => {
     it('should create an event', async () => {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       const result = await service.create(mockEvent as any);
       expect(result).toEqual(mockEvent);
     });

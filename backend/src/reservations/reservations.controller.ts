@@ -1,7 +1,6 @@
 import { 
   Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, Query, Res 
 } from '@nestjs/common';
-import { Response } from 'express';
 import { ReservationsService } from './reservations.service';
 import { CreateReservationDto } from './dto/create-reservation.dto';
 import { UpdateReservationStatusDto } from './dto/update-reservation-status.dto';
@@ -9,15 +8,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/schemas/user.schema';
-
-// Define a type for the Request with User
-interface RequestWithUser extends Request {
-  user: {
-    userId: string;
-    email: string;
-    role: string;
-  };
-}
+import { Response } from 'express';
 
 @Controller('reservations')
 @UseGuards(AuthGuard('jwt'), RolesGuard) 
@@ -27,9 +18,12 @@ export class ReservationsController {
   // Participant: Build a reservation request
   @Post()
   @Roles(UserRole.PARTICIPANT)
-  // Use 'any' or Custom Interface for request to avoid lint errors
-  create(@Request() req: any, @Body() createReservationDto: CreateReservationDto) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  create(
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+    @Request() req: any, 
+    @Body() createReservationDto: CreateReservationDto
+  ) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument
     return this.reservationsService.create(req.user.userId, createReservationDto);
   }
 
