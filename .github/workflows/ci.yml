@@ -1,87 +1,87 @@
 name: CI
 
 on:
-	push:
-		branches: ["main", "master"]
-	pull_request:
-		branches: ["main", "master"]
+  push:
+    branches: ["main", "dev"]
+  pull_request:
+    branches: ["main", "dev"]
 
 permissions:
-	contents: read
+  contents: read
 
 jobs:
-	backend:
-		name: Backend - Lint, Test, Build
-		runs-on: ubuntu-latest
-		services:
-			mongo:
-				image: mongo:6.0
-				ports:
-					- 27017:27017
-				env:
-					MONGO_INITDB_ROOT_USERNAME: root
-					MONGO_INITDB_ROOT_PASSWORD: rootpassword
-				options: >-
-					--health-cmd "mongosh --eval 'db.runCommand({ ping: 1 })'" \
-					--health-interval 10s \
-					--health-timeout 5s \
-					--health-retries 5
-		env:
-			CI: true
-			MONGO_URI: mongodb://root:rootpassword@localhost:27017/eventify?authSource=admin
-			JWT_SECRET: secretKey_change_me
-		steps:
-			- name: Checkout
-				uses: actions/checkout@v4
+  backend:
+    name: Backend - (Lint, Test, Build)
+    runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo:6.0
+        ports:
+          - 27017:27017
+        env:
+          MONGO_INITDB_ROOT_USERNAME: root
+          MONGO_INITDB_ROOT_PASSWORD: rootpassword
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      CI: true
+      MONGO_URI: mongodb://root:rootpassword@localhost:27017/eventify?authSource=admin
+      JWT_SECRET: secretKey_change_me
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-			- name: Setup Node.js
-				uses: actions/setup-node@v4
-				with:
-					node-version: 20
-					cache: npm
-					cache-dependency-path: backend/package-lock.json
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
 
-			- name: Install dependencies
-				working-directory: backend
-				run: npm ci
+      - name: Install dependencies
+        working-directory: backend
+        run: npm ci
 
-			- name: Lint
-				working-directory: backend
-				run: npm run lint
+      - name: Lint
+        working-directory: backend
+        run: npm run lint
 
-			- name: Test
-				working-directory: backend
-				run: npm test
+      - name: Test
+        working-directory: backend
+        run: npm test
 
-			- name: Build
-				working-directory: backend
-				run: npm run build
+      - name: Build
+        working-directory: backend
+        run: npm run build
 
-	frontend:
-		name: Frontend - Lint, Build
-		runs-on: ubuntu-latest
-		env:
-			CI: true
-			NEXT_PUBLIC_API_URL: http://localhost:4000
-		steps:
-			- name: Checkout
-				uses: actions/checkout@v4
+  frontend:
+    name: Frontend - Lint, Build
+    runs-on: ubuntu-latest
+    env:
+      CI: true
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-			- name: Setup Node.js
-				uses: actions/setup-node@v4
-				with:
-					node-version: 20
-					cache: npm
-					cache-dependency-path: frontend/package-lock.json
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
 
-			- name: Install dependencies
-				working-directory: frontend
-				run: npm ci
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
 
-			- name: Lint
-				working-directory: frontend
-				run: npm run lint
+      - name: Lint
+        working-directory: frontend
+        run: npm run lint
 
-			- name: Build
-				working-directory: frontend
-				run: npm run build
+      - name: Build
+        working-directory: frontend
+        run: npm run build
