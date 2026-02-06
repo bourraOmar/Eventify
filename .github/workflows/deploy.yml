@@ -1,0 +1,180 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: ["main", "master"]
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:  # Allow manual deployment
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  deploy-backend:
+    name: Deploy Backend
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v')
+    
+    environment:
+      name: production
+      url: https://api.eventify.com  # Update with your actual URL
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: 📦 Install dependencies
+        working-directory: backend
+        run: npm ci --production
+
+      - name: 🏗️ Build application
+        working-directory: backend
+        run: npm run build
+
+      - name: 🐳 Build and Push Docker Image
+        if: env.DOCKER_USERNAME != '' && env.DOCKER_PASSWORD != ''
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: |
+          echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+          
+          # Build image
+          docker build -t $DOCKER_USERNAME/eventify-backend:latest ./backend
+          docker tag $DOCKER_USERNAME/eventify-backend:latest $DOCKER_USERNAME/eventify-backend:${{ github.sha }}
+          
+          # Push images
+          docker push $DOCKER_USERNAME/eventify-backend:latest
+          docker push $DOCKER_USERNAME/eventify-backend:${{ github.sha }}
+
+      - name: 🚀 Deploy to Server (SSH)
+        if: env.SSH_PRIVATE_KEY != ''
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          # Setup SSH
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H $SSH_HOST >> ~/.ssh/known_hosts
+          
+          # Deploy via SSH
+          ssh -i ~/.ssh/deploy_key $SSH_USER@$SSH_HOST << 'EOF'
+            cd /var/www/eventify/backend
+            git pull origin main
+            npm ci --production
+            npm run build
+            pm2 restart eventify-backend
+          EOF
+
+      - name: 📢 Notify deployment
+        if: always()
+        run: |
+          echo "Backend deployment completed!"
+          echo "Status: ${{ job.status }}"
+
+  deploy-frontend:
+    name: Deploy Frontend
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v')
+    
+    environment:
+      name: production
+      url: https://eventify.com  # Update with your actual URL
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: 📦 Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: 🏗️ Build application
+        working-directory: frontend
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+        run: npm run build
+
+      - name: 🚀 Deploy to Vercel (if configured)
+        if: env.VERCEL_TOKEN != ''
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        working-directory: frontend
+        run: |
+          npm install -g vercel
+          vercel --prod --token=$VERCEL_TOKEN
+
+      - name: 📢 Notify deployment
+        if: always()
+        run: |
+          echo "Frontend deployment completed!"
+          echo "Status: ${{ job.status }}"
+
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [deploy-backend, deploy-frontend]
+    if: startsWith(github.ref, 'refs/tags/v')
+    
+    permissions:
+      contents: write
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 📝 Generate changelog
+        id: changelog
+        run: |
+          # Get previous tag
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          
+          if [ -z "$PREV_TAG" ]; then
+            CHANGELOG=$(git log --pretty=format:"- %s (%h)" --no-merges)
+          else
+            CHANGELOG=$(git log $PREV_TAG..HEAD --pretty=format:"- %s (%h)" --no-merges)
+          fi
+          
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: 🎉 Create Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          release_name: Release ${{ github.ref_name }}
+          body: |
+            ## Changes in this release
+            
+            ${{ steps.changelog.outputs.changelog }}
+            
+            ## Deployment
+            - ✅ Backend deployed to production
+            - ✅ Frontend deployed to production
+          draft: false
+          prerelease: false
