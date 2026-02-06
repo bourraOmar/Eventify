@@ -1,11 +1,15 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { RegisterDto } from './dto/register.dto';
-import { LoginDto } from './dto/login.dto';      
+import { LoginDto } from './dto/login.dto';
 
 @Injectable()
 export class AuthService {
@@ -16,17 +20,17 @@ export class AuthService {
 
   async register(registerDto: RegisterDto) {
     const { email, password, name, role } = registerDto;
-    
+
     const existingUser = await this.userModel.findOne({ email });
     if (existingUser) throw new ConflictException('Email already exists');
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    
+
     await this.userModel.create({
       name,
       email,
       password: hashedPassword,
-      role: role || 'participant'
+      role: role || 'participant',
     });
 
     return { message: 'User registered successfully' };
@@ -46,8 +50,8 @@ export class AuthService {
       user: {
         id: user._id,
         name: user.name,
-        role: user.role
-      }
+        role: user.role,
+      },
     };
   }
 }
