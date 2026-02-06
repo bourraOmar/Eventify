@@ -43,7 +43,7 @@ export class EventsService {
     return existingEvent;
   }
 
-  async remove(id: string): Promise<Event> {
+  async remove(id: string): Promise<Event | null> {
     return this.eventModel.findByIdAndDelete(id).exec();
   }
 }

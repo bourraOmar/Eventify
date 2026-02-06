@@ -1,4 +1,12 @@
-import { IsDateString, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsDateString,
+  IsEnum,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 import { EventStatus } from '../schemas/event.schema';
 
 export class CreateEventDto {
@@ -10,7 +18,7 @@ export class CreateEventDto {
   @IsNotEmpty()
   description: string;
 
-  @IsDateString() 
+  @IsDateString()
   date: string;
 
   @IsString()

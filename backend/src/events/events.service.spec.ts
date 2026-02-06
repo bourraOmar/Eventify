@@ -21,7 +21,7 @@ describe('EventsService', () => {
   class MockModel {
     constructor(private data: any) {}
     save = jest.fn().mockResolvedValue(mockEvent);
-    
+
     // Static methods for find, findById, etc.
     static find = jest.fn();
     static findById = jest.fn();
@@ -45,7 +45,7 @@ describe('EventsService', () => {
 
   describe('create', () => {
     it('should create an event', async () => {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       const result = await service.create(mockEvent as any);
       expect(result).toEqual(mockEvent);
     });
@@ -58,7 +58,9 @@ describe('EventsService', () => {
 
       const result = await service.findAllPublished();
       expect(result).toEqual([mockEvent]);
-      expect(MockModel.find).toHaveBeenCalledWith({ status: EventStatus.PUBLISHED });
+      expect(MockModel.find).toHaveBeenCalledWith({
+        status: EventStatus.PUBLISHED,
+      });
     });
   });
 
@@ -75,7 +77,9 @@ describe('EventsService', () => {
       const exec = jest.fn().mockResolvedValue(null);
       MockModel.findById.mockReturnValue({ exec });
 
-      await expect(service.findOne('eventId')).rejects.toThrow(NotFoundException);
+      await expect(service.findOne('eventId')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });
