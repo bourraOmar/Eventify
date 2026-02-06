@@ -3,7 +3,7 @@ import { ReservationsService } from './reservations.service';
 import { getModelToken } from '@nestjs/mongoose';
 import { Reservation, ReservationStatus } from './schemas/reservation.schema';
 import { Event, EventStatus } from '../events/schemas/event.schema';
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import { ConflictException } from '@nestjs/common';
 
 const mockEvent = {
   _id: 'eventId',
@@ -24,21 +24,8 @@ const mockReservation = {
 
 describe('ReservationsService', () => {
   let service: ReservationsService;
-  let eventModel: any;
-  let reservationModel: any;
+  // REMOVED unused vars: reservationModel
 
-  const mockReservationModel = {
-    findOne: jest.fn(),
-    find: jest.fn(),
-    findById: jest.fn(),
-    findByIdAndUpdate: jest.fn(),
-    // Constructor mock
-    constructor: jest.fn().mockImplementation(() => ({
-      save: jest.fn().mockResolvedValue(mockReservation),
-    })),
-  };
-
-  // Class mock for "new this.reservationModel()"
   class MockResModel {
     constructor(public data: any) {}
     save = jest.fn().mockResolvedValue(mockReservation);
@@ -68,25 +55,21 @@ describe('ReservationsService', () => {
     }).compile();
 
     service = module.get<ReservationsService>(ReservationsService);
-    reservationModel = module.get(getModelToken(Reservation.name));
-    eventModel = module.get(getModelToken(Event.name));
   });
 
   describe('create', () => {
     it('should create a reservation if rules are met', async () => {
-      // Mock Event found and published
-      eventModel.findById.mockResolvedValue(mockEvent);
-      // Mock No existing reservation
+      mockEventModel.findById.mockResolvedValue(mockEvent);
       MockResModel.findOne.mockResolvedValue(null);
 
       const result = await service.create('userId', { eventId: 'eventId' });
 
       expect(result).toEqual(mockReservation);
-      expect(eventModel.findById).toHaveBeenCalledWith('eventId');
+      expect(mockEventModel.findById).toHaveBeenCalledWith('eventId');
     });
 
     it('should fail if event is full', async () => {
-      eventModel.findById.mockResolvedValue({
+      mockEventModel.findById.mockResolvedValue({
         ...mockEvent,
         capacity: 10,
         reservedPlaces: 10,
@@ -98,7 +81,7 @@ describe('ReservationsService', () => {
     });
 
     it('should fail if already reserved', async () => {
-      eventModel.findById.mockResolvedValue(mockEvent);
+      mockEventModel.findById.mockResolvedValue(mockEvent);
       MockResModel.findOne.mockResolvedValue(mockReservation);
 
       await expect(

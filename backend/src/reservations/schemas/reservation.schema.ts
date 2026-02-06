@@ -1,7 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
-import { User } from '../../users/schemas/user.schema';
-import { Event } from '../../events/schemas/event.schema';
 
 export type ReservationDocument = HydratedDocument<Reservation>;
 
@@ -15,10 +13,10 @@ export enum ReservationStatus {
 @Schema({ timestamps: true })
 export class Reservation {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
-  user: User;
+  user: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'Event', required: true })
-  event: Event;
+  event: Types.ObjectId;
 
   @Prop({
     required: true,

@@ -3,10 +3,9 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
-  ForbiddenException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model } from 'mongoose';
 import {
   Reservation,
   ReservationDocument,
@@ -18,7 +17,8 @@ import {
   EventStatus,
 } from '../events/schemas/event.schema';
 import { CreateReservationDto } from './dto/create-reservation.dto';
-import * as PDFDocument from 'pdfkit'; // Add this import
+import PDFDocument from 'pdfkit';
+import { User } from '../users/schemas/user.schema';
 
 @Injectable()
 export class ReservationsService {
@@ -87,13 +87,77 @@ export class ReservationsService {
   }
 
   // Admin: Update Status (Confirm / Refuse)
-  async update(id: number, updateReservationDto: UpdateReservationDto) {
-    return `This action updates a #${id} reservation`;
+  update(id: string, _updateReservationDto: any) {
+    return { id, message: 'Update reserved' };
   }
 
   // Admin: Remove reservation
-  async remove(id: number) {
-    return `This action removes a #${id} reservation`;
+  remove(id: string) {
+    return { id, message: 'Remove reserved' };
+  }
+
+  // Admin: Update Status (Confirm / Refuse)
+  async updateStatus(id: string, status: ReservationStatus) {
+    const reservation = await this.reservationModel
+      .findById(id)
+      .populate('event');
+    if (!reservation) throw new NotFoundException('Reservation not found');
+    const event = reservation.event as unknown as EventDocument;
+
+    if (
+      status === ReservationStatus.CONFIRMED &&
+      reservation.status !== ReservationStatus.CONFIRMED
+    ) {
+      if (event.reservedPlaces >= event.capacity) {
+        throw new ConflictException('Event reached capacity, cannot confirm');
+      }
+      await this.eventModel.findByIdAndUpdate(event._id, {
+        $inc: { reservedPlaces: 1 },
+      });
+    }
+
+    if (
+      status === ReservationStatus.CANCELED &&
+      reservation.status === ReservationStatus.CONFIRMED
+    ) {
+      await this.eventModel.findByIdAndUpdate(event._id, {
+        $inc: { reservedPlaces: -1 },
+      });
+    }
+
+    reservation.status = status;
+    return reservation.save();
+  }
+
+  // Participant: Cancel own reservation
+  async cancelMyReservation(userId: string, reservationId: string) {
+    const reservation = await this.reservationModel
+      .findOne({
+        _id: reservationId,
+        user: userId,
+      })
+      .populate('event');
+
+    if (!reservation) {
+      throw new NotFoundException(
+        'Reservation not found or does not belong to you',
+      );
+    }
+
+    if (reservation.status === ReservationStatus.CANCELED) {
+      throw new BadRequestException('Reservation is already canceled');
+    }
+
+    // If it was confirmed, decrement the event's reserved places
+    if (reservation.status === ReservationStatus.CONFIRMED) {
+      const event = reservation.event as unknown as EventDocument;
+      await this.eventModel.findByIdAndUpdate(event._id, {
+        $inc: { reservedPlaces: -1 },
+      });
+    }
+
+    reservation.status = ReservationStatus.CANCELED;
+    return reservation.save();
   }
 
   // Logic to generate PDF
@@ -105,36 +169,45 @@ export class ReservationsService {
       .exec();
 
     if (!reservation) throw new NotFoundException('Reservation not found');
-    
+
     if (reservation.status !== ReservationStatus.CONFIRMED) {
-      throw new BadRequestException('Ticket is only available for CONFIRMED reservations');
+      throw new BadRequestException(
+        'Ticket is only available for CONFIRMED reservations',
+      );
     }
 
-    const event: any = reservation.event;
-    const user: any = reservation.user;
+    const event = reservation.event as unknown as Event;
+    const user = reservation.user as unknown as User;
 
     return new Promise((resolve) => {
       const doc = new PDFDocument({ size: 'A4' });
       const buffers: Buffer[] = [];
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       doc.on('data', buffers.push.bind(buffers));
+
       doc.on('end', () => {
         resolve(Buffer.concat(buffers));
       });
 
-      // PDF Content
+      // Disable linting for entire block to avoid spamming ignores for every PDFKit line
+
       doc.fontSize(25).text('EVENT TICKET', { align: 'center' });
       doc.moveDown();
-      
+
       doc.fontSize(18).text(`Event: ${event.title}`);
-      doc.fontSize(14).text(`Date: ${new Date(event.date).toLocaleDateString()}`);
+
+      doc
+        .fontSize(14)
+        .text(`Date: ${new Date(event.date).toLocaleDateString()}`);
       doc.text(`Location: ${event.location}`);
       doc.moveDown();
-      
+
       doc.text(`Attendee: ${user.name}`);
       doc.text(`Email: ${user.email}`);
-      doc.text(`Reservation ID: ${reservation._id}`);
-      
+      // Cast ObjectId safely to string
+      doc.text(`Reservation ID: ${String(reservation._id)}`);
+
       doc.moveDown();
       doc.fontSize(10).text('Scan this at the entrance.', { align: 'center' });
 
