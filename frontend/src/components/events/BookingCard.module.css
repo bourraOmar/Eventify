@@ -1,0 +1,70 @@
+.card {
+  position: sticky;
+  top: 6rem;
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border) / 0.5 );
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+}
+
+.price {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+  color: hsl(var(--foreground));
+}
+
+.label {
+  font-size: 0.875rem;
+  color: hsl(var(--muted-foreground));
+  margin-bottom: 1.5rem;
+}
+
+.infoRow {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  font-size: 0.9375rem;
+}
+
+.infoLabel {
+  color: hsl(var(--muted-foreground));
+}
+
+.infoValue {
+  font-weight: 500;
+  color: hsl(var(--foreground));
+}
+
+.separator {
+  height: 1px;
+  background: hsl(var(--border));
+  margin: 1.5rem 0;
+}
+
+.message {
+  margin-top: 1rem;
+  text-align: center;
+  font-size: 0.875rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.success {
+  background: hsl(var(--secondary) / 0.1);
+  color: hsl(var(--secondary));
+  padding: 1rem;
+  border-radius: var(--radius);
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.error {
+  background: hsl(var(--destructive) / 0.1);
+  color: hsl(var(--destructive));
+  padding: 0.75rem;
+  border-radius: var(--radius);
+  text-align: center;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
