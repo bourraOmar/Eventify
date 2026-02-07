@@ -16,9 +16,11 @@ const mockUser = {
   role: UserRole.PARTICIPANT,
 };
 
+import { Model } from 'mongoose';
+
 describe('AuthService', () => {
   let service: AuthService;
-  let model: any;
+  let model: Model<User>;
 
   const mockUserModel = {
     findOne: jest.fn(),
@@ -45,13 +47,14 @@ describe('AuthService', () => {
     }).compile();
 
     service = module.get<AuthService>(AuthService);
-    model = module.get(getModelToken(User.name));
+    model = module.get<Model<User>>(getModelToken(User.name));
   });
 
   describe('register', () => {
     it('should successfully register a user', async () => {
       jest.spyOn(model, 'findOne').mockResolvedValue(null);
-      jest.spyOn(model, 'create').mockResolvedValue(mockUser);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      jest.spyOn(model, 'create').mockResolvedValue(mockUser as any);
       (bcrypt.hash as jest.Mock).mockResolvedValue('hashedPassword');
 
       const result = await service.register({
@@ -61,12 +64,21 @@ describe('AuthService', () => {
         role: UserRole.PARTICIPANT,
       });
 
-      expect(result).toEqual({ message: 'User registered successfully' });
+      expect(result).toHaveProperty('access_token');
+      expect(result.access_token).toEqual('test_token');
+      expect(result.user).toEqual({
+        id: mockUser._id,
+        name: mockUser.name,
+        email: mockUser.email,
+        role: mockUser.role,
+      });
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(model.create).toHaveBeenCalled();
     });
 
     it('should throw ConflictException if email exists', async () => {
-      jest.spyOn(model, 'findOne').mockResolvedValue(mockUser);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      jest.spyOn(model, 'findOne').mockResolvedValue(mockUser as any);
       await expect(
         service.register({
           name: 'Test',
@@ -80,7 +92,8 @@ describe('AuthService', () => {
 
   describe('login', () => {
     it('should return a token if credentials are valid', async () => {
-      jest.spyOn(model, 'findOne').mockResolvedValue(mockUser);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      jest.spyOn(model, 'findOne').mockResolvedValue(mockUser as any);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
       const result = await service.login({
@@ -93,7 +106,8 @@ describe('AuthService', () => {
     });
 
     it('should throw UnauthorizedException if password is wrong', async () => {
-      jest.spyOn(model, 'findOne').mockResolvedValue(mockUser);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      jest.spyOn(model, 'findOne').mockResolvedValue(mockUser as any);
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
       await expect(

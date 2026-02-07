@@ -42,7 +42,7 @@ export class ReservationsController {
   // Participant: Get my history
   @Get('my')
   findMyReservations(@Request() req: any) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument
     return this.reservationsService.findMyReservations(req.user.userId);
   }
 
@@ -67,7 +67,7 @@ export class ReservationsController {
   @Delete(':id/cancel')
   @Roles(UserRole.PARTICIPANT)
   cancel(@Request() req: any, @Param('id') id: string) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument
     return this.reservationsService.cancelMyReservation(req.user.userId, id);
   }
 
