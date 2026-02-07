@@ -33,7 +33,7 @@ jobs:
 
       - name: 📦 Install dependencies
         working-directory: backend
-        run: npm ci --production
+        run: npm ci
 
       - name: 🏗️ Build application
         working-directory: backend
@@ -72,7 +72,7 @@ jobs:
           ssh -i ~/.ssh/deploy_key $SSH_USER@$SSH_HOST << 'EOF'
             cd /var/www/eventify/backend
             git pull origin main
-            npm ci --production
+            npm ci
             npm run build
             pm2 restart eventify-backend
           EOF
