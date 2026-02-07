@@ -32,7 +32,7 @@ export const ReservationCard = ({ reservation, onUpdate }: ReservationCardProps)
           await api.delete(`/reservations/${reservation.id}/cancel`);
           addToast('success', 'Reservation canceled successfully', 'Success');
           onUpdate();
-        } catch (error) {
+        } catch (_) { // eslint-disable-line @typescript-eslint/no-unused-vars
           addToast('error', 'Failed to cancel reservation', 'Error');
         } finally {
           setLoading(false);
@@ -55,7 +55,7 @@ export const ReservationCard = ({ reservation, onUpdate }: ReservationCardProps)
       link.click();
       link.remove();
       addToast('success', 'Ticket downloaded successfully', 'Download Complete');
-    } catch (error) {
+    } catch (_) { // eslint-disable-line @typescript-eslint/no-unused-vars
       addToast('error', 'Failed to download ticket. The event might not happen soon enough or ticket generation failed.', 'Download Failed');
     }
   };

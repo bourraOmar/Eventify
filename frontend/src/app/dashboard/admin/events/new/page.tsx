@@ -45,7 +45,7 @@ export default function NewEventPage() {
       await api.post('/events', payload);
       addToast('success', 'Event created successfully', 'Event Created');
       router.push('/dashboard/admin/events');
-    } catch (err: any) {
+    } catch (err: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
       setError(err.response?.data?.message || 'Failed to create event');
       addToast('error', 'Failed to create event', 'Error');
     } finally {

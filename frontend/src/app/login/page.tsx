@@ -7,7 +7,6 @@ import { api } from '@/lib/api/client';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
-import { UserRole } from '@/types';
 
 import styles from './login.module.css';
 
@@ -25,7 +24,7 @@ export default function LoginPage() {
     try {
       const response = await api.post('/auth/login', formData);
       login(response.data.access_token, response.data.user);
-    } catch (err: any) {
+    } catch (err: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
       setError(err.response?.data?.message || 'Failed to login');
     } finally {
       setLoading(false);

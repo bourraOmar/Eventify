@@ -34,7 +34,7 @@ export default function SignupPage() {
       });
       // Automatically login after signup
       login(response.data.access_token, response.data.user);
-    } catch (err: any) {
+    } catch (err: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
       setError(err.response?.data?.message || 'Failed to create account');
     } finally {
       setLoading(false);

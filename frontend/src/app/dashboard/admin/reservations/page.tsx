@@ -14,12 +14,13 @@ export default function AdminReservationsPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [reservations, setReservations] = useState<Reservation[]>([]);
-  const [loading, setLoading] = useState(true);
+  // const [loading, setLoading] = useState(true); // unused
   const { addToast } = useToast();
 
   const fetchReservations = async () => {
     try {
       const response = await api.get('/reservations');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const mappedReservations = response.data.map((res: any) => ({
         ...res,
         id: res._id || res.id,
@@ -28,7 +29,7 @@ export default function AdminReservationsPage() {
     } catch (error) {
       console.error('Failed to fetch reservations', error);
     } finally {
-      setLoading(false);
+      // setLoading(false);
     }
   };
 
@@ -50,7 +51,7 @@ export default function AdminReservationsPage() {
       await api.patch(`/reservations/${id}/status`, { status });
       addToast('success', `Reservation marked as ${status.toLowerCase()}`, 'Status Updated');
       fetchReservations();
-    } catch (error) {
+    } catch {
       addToast('error', 'Failed to update reservation status', 'Update Failed');
     }
   };

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api/client';
@@ -16,7 +16,7 @@ export default function ParticipantDashboard() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchReservations = async () => {
+  const fetchReservations = useCallback(async () => {
     // Check if token exists before making the request
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
     if (!token) {
@@ -27,22 +27,25 @@ export default function ParticipantDashboard() {
 
     try {
       const response = await api.get('/reservations/my');
-      const mappedReservations = response.data.map((res: any) => ({
+      const mappedReservations = response.data.map((res: Reservation & { _id?: string }) => ({
         ...res,
         id: res._id || res.id,
       }));
       setReservations(mappedReservations);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to fetch reservations', error);
       // If 401, redirect to login
-      if (error.response?.status === 401) {
-        console.log('Unauthorized - redirecting to login');
-        router.push('/login');
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { status?: number } };
+        if (axiosError.response?.status === 401) {
+          console.log('Unauthorized - redirecting to login');
+          router.push('/login');
+        }
       }
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -53,7 +56,7 @@ export default function ParticipantDashboard() {
     if (user) {
       fetchReservations();
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading, router, fetchReservations]);
 
   if (authLoading || loading) {
     return (
@@ -74,7 +77,7 @@ export default function ParticipantDashboard() {
         <div className={styles.empty}>
           <Ticket size={48} className="mx-auto mb-4 opacity-20" />
           <h3 className="text-xl font-medium mb-2">No reservations yet</h3>
-          <p className="mb-6">You haven't booked any events yet.</p>
+          <p className="mb-6">You haven&apos;t booked any events yet.</p>
           <Button onClick={() => router.push('/events')} variant="outline">
             Browse Events
           </Button>
