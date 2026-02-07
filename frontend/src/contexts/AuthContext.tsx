@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { User, UserRole } from '../types';
 import { useToast } from './ToastContext';
@@ -26,32 +26,29 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
   const router = useRouter();
   const { addToast } = useToast();
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    // Initialize auth state from local storage
-    const storedToken = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
+  const [token, setToken] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('token');
+    }
+    return null;
+  });
 
-    if (storedToken && storedUser && storedUser !== 'undefined') {
-      try {
-        // eslint-disable-next-line
-        setToken(storedToken);
-        // eslint-disable-next-line
-        setUser(JSON.parse(storedUser));
-      } catch (_) {
-        // If parsing fails, clear invalid data
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+  const [user, setUser] = useState<User | null>(() => {
+    if (typeof window !== 'undefined') {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser && storedUser !== 'undefined') {
+        try {
+          return JSON.parse(storedUser);
+        } catch {
+          localStorage.removeItem('user');
+        }
       }
     }
-    setLoading(false);
-  }, []);
+    return null;
+  });
 
   const login = (newToken: string, newUser: User) => {
     localStorage.setItem('token', newToken);
@@ -88,7 +85,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         token,
         login,
         logout,
-        loading,
+        loading: false,
         isAuthenticated: !!user,
         isAdmin: user?.role === UserRole.ADMIN,
       }}

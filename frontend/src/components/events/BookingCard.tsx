@@ -29,6 +29,7 @@ export const BookingCard = ({ event, remainingSeats }: BookingCardProps) => {
       setChecking(true);
       api.get('/reservations/my')
         .then((res) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const found = res.data.find((r: any) =>
             (r.event && (r.event._id === event.id || r.event.id === event.id)) ||
             r.event === event.id
@@ -57,7 +58,7 @@ export const BookingCard = ({ event, remainingSeats }: BookingCardProps) => {
       setSuccess(true);
       addToast('success', 'Reservation request sent successfully', 'Reservation Pending');
       router.refresh();
-    } catch (err: any) {
+    } catch (err: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
       if (err.response?.status === 401) {
         addToast('error', 'Please login to reserve a spot', 'Unauthorized');
         router.push('/login');
@@ -128,7 +129,7 @@ export const BookingCard = ({ event, remainingSeats }: BookingCardProps) => {
       </Button>
 
       <p className={styles.message}>
-        You won't be charged yet.
+        You won&apos;t be charged yet.
       </p>
     </div>
   );

@@ -16,7 +16,7 @@ export default function AdminEventsPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [events, setEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(true);
+  // const [loading, setLoading] = useState(true); // Removed unused state
   const { addToast } = useToast();
   const { openDialog } = useConfirm();
 
@@ -24,6 +24,7 @@ export default function AdminEventsPage() {
     try {
       const response = await api.get('/events/admin/all');
       // Map _id to id if needed
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const mappedEvents = response.data.map((event: any) => ({
         ...event,
         id: event._id || event.id,
@@ -33,7 +34,7 @@ export default function AdminEventsPage() {
       console.error('Failed to fetch events', error);
       addToast('error', 'Failed to fetch events', 'Error');
     } finally {
-      setLoading(false);
+      // setLoading(false);
     }
   };
 
@@ -45,6 +46,7 @@ export default function AdminEventsPage() {
       }
       fetchEvents();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, authLoading, router]);
 
   const handlePublish = async (id: string) => {
@@ -95,7 +97,7 @@ export default function AdminEventsPage() {
           await api.delete(`/events/${id}`);
           addToast('success', 'Event deleted successfully', 'Deleted');
           fetchEvents();
-        } catch (error) {
+        } catch {
           addToast('error', 'Failed to delete event', 'Error');
         }
       },

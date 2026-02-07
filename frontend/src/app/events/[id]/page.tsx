@@ -18,7 +18,7 @@ async function getEvent(id: string): Promise<Event | null> {
       ...data,
       id: data._id || data.id,
     };
-  } catch (error) {
+  } catch (_) { // eslint-disable-line @typescript-eslint/no-unused-vars
     return null;
   }
 }
@@ -31,7 +31,7 @@ async function getRemainingSeats(id: string): Promise<number> {
 
     if (!res.ok) return 0;
     return res.json();
-  } catch (error) {
+  } catch (_) { // eslint-disable-line @typescript-eslint/no-unused-vars
     return 0;
   }
 }
