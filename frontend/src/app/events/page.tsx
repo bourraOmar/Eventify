@@ -15,6 +15,7 @@ async function getEvents(): Promise<Event[]> {
     }
 
     const data = await res.json();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return data.map((event: any) => ({
       ...event,
       id: event._id || event.id,

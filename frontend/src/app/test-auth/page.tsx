@@ -1,24 +1,20 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api/client';
 
 export default function TestAuthPage() {
   const { user, token, isAuthenticated } = useAuth();
-  const [localToken, setLocalToken] = useState<string | null>(null);
-  const [localUser, setLocalUser] = useState<string | null>(null);
+  const [localToken] = useState<string | null>(() =>
+    typeof window !== 'undefined' ? localStorage.getItem('token') : null
+  );
+  const [localUser] = useState<string | null>(() =>
+    typeof window !== 'undefined' ? localStorage.getItem('user') : null
+  );
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [testResult, setTestResult] = useState<any>(null);
   const [testError, setTestError] = useState<string | null>(null);
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    // eslint-disable-next-line
-    setLocalToken(localStorage.getItem('token'));
-    // eslint-disable-next-line
-    setLocalUser(localStorage.getItem('user'));
-  }, []);
 
   const testAuth = async () => {
     setTestError(null);
@@ -27,7 +23,6 @@ export default function TestAuthPage() {
       const response = await api.get('/auth/me');
       setTestResult(response.data);
     } catch (error: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       setTestError(error.response?.data?.message || error.message);
     }
   };

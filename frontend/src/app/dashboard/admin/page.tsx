@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api/client';
 import { UserRole } from '@/types';
-import { Calendar, Users, List, PlusCircle } from 'lucide-react';
+import { Calendar, List } from 'lucide-react';
 import { Loader2 } from 'lucide-react';
 import styles from './admin.module.css';
 
@@ -43,7 +43,7 @@ export default function AdminDashboard() {
             events: eventsRes.data.length,
             reservations: reservationsRes.data.length,
           });
-        } catch (error: any) {
+        } catch (error: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
           console.error('Failed to fetch admin stats', error);
           // If 401, redirect to login
           if (error.response?.status === 401) {
