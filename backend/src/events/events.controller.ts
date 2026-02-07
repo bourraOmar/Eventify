@@ -1,5 +1,13 @@
-import { 
-  Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request 
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  Request,
 } from '@nestjs/common';
 import { EventsService } from './events.service';
 import { CreateEventDto } from './dto/create-event.dto';
@@ -20,13 +28,18 @@ export class EventsController {
     return this.eventsService.findAllPublished();
   }
 
+  @Get(':id/seats')
+  async getSeats(@Param('id') id: string) {
+    return this.eventsService.getSeats(id);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.eventsService.findOne(id);
   }
 
   // --- PROTECTED ROUTES (ADMIN ONLY) ---
-  
+
   @Post()
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.ADMIN)

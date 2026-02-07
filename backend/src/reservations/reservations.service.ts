@@ -3,10 +3,9 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
-  ForbiddenException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model } from 'mongoose';
 import {
   Reservation,
   ReservationDocument,
@@ -18,7 +17,8 @@ import {
   EventStatus,
 } from '../events/schemas/event.schema';
 import { CreateReservationDto } from './dto/create-reservation.dto';
-import * as PDFDocument from 'pdfkit'; // Add this import
+import PDFDocument from 'pdfkit';
+import { User } from '../users/schemas/user.schema';
 
 @Injectable()
 export class ReservationsService {
@@ -87,15 +87,80 @@ export class ReservationsService {
   }
 
   // Admin: Update Status (Confirm / Refuse)
-  async update(id: number, updateReservationDto: UpdateReservationDto) {
-    return `This action updates a #${id} reservation`;
+  update(id: string, _updateReservationDto: any) {
+    return { id, message: 'Update reserved' };
   }
 
   // Admin: Remove reservation
-  async remove(id: number) {
-    return `This action removes a #${id} reservation`;
+  remove(id: string) {
+    return { id, message: 'Remove reserved' };
   }
 
+  // Admin: Update Status (Confirm / Refuse)
+  async updateStatus(id: string, status: ReservationStatus) {
+    const reservation = await this.reservationModel
+      .findById(id)
+      .populate('event');
+    if (!reservation) throw new NotFoundException('Reservation not found');
+    const event = reservation.event as unknown as EventDocument;
+
+    if (
+      status === ReservationStatus.CONFIRMED &&
+      reservation.status !== ReservationStatus.CONFIRMED
+    ) {
+      if (event.reservedPlaces >= event.capacity) {
+        throw new ConflictException('Event reached capacity, cannot confirm');
+      }
+      await this.eventModel.findByIdAndUpdate(event._id, {
+        $inc: { reservedPlaces: 1 },
+      });
+    }
+
+    if (
+      status === ReservationStatus.CANCELED &&
+      reservation.status === ReservationStatus.CONFIRMED
+    ) {
+      await this.eventModel.findByIdAndUpdate(event._id, {
+        $inc: { reservedPlaces: -1 },
+      });
+    }
+
+    reservation.status = status;
+    return reservation.save();
+  }
+
+  // Participant: Cancel own reservation
+  async cancelMyReservation(userId: string, reservationId: string) {
+    const reservation = await this.reservationModel
+      .findOne({
+        _id: reservationId,
+        user: userId,
+      })
+      .populate('event');
+
+    if (!reservation) {
+      throw new NotFoundException(
+        'Reservation not found or does not belong to you',
+      );
+    }
+
+    if (reservation.status === ReservationStatus.CANCELED) {
+      throw new BadRequestException('Reservation is already canceled');
+    }
+
+    // If it was confirmed, decrement the event's reserved places
+    if (reservation.status === ReservationStatus.CONFIRMED) {
+      const event = reservation.event as unknown as EventDocument;
+      await this.eventModel.findByIdAndUpdate(event._id, {
+        $inc: { reservedPlaces: -1 },
+      });
+    }
+
+    reservation.status = ReservationStatus.CANCELED;
+    return reservation.save();
+  }
+
+  // Logic to generate PDF
   // Logic to generate PDF
   async generateTicket(reservationId: string, userId: string): Promise<Buffer> {
     const reservation = await this.reservationModel
@@ -104,39 +169,127 @@ export class ReservationsService {
       .populate('user')
       .exec();
 
-    if (!reservation) throw new NotFoundException('Reservation not found');
-    
-    if (reservation.status !== ReservationStatus.CONFIRMED) {
-      throw new BadRequestException('Ticket is only available for CONFIRMED reservations');
+    if (!reservation) {
+      throw new NotFoundException('Reservation not found');
     }
 
-    const event: any = reservation.event;
-    const user: any = reservation.user;
+    // Cast explicitly to check status
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    if ((reservation as any).status !== ReservationStatus.CONFIRMED) {
+      throw new BadRequestException(
+        'Ticket is only available for CONFIRMED reservations',
+      );
+    }
+
+    const event = reservation.event as unknown as Event;
+    const user = reservation.user as unknown as User;
 
     return new Promise((resolve) => {
-      const doc = new PDFDocument({ size: 'A4' });
+      const doc = new PDFDocument({ size: 'A5', margin: 30 }); // A5 size is better for tickets
       const buffers: Buffer[] = [];
 
-      doc.on('data', buffers.push.bind(buffers));
-      doc.on('end', () => {
-        resolve(Buffer.concat(buffers));
-      });
+      doc.on('data', buffers.push.bind(buffers)); // eslint-disable-line @typescript-eslint/no-unsafe-argument
+      doc.on('end', () => resolve(Buffer.concat(buffers)));
 
-      // PDF Content
-      doc.fontSize(25).text('EVENT TICKET', { align: 'center' });
-      doc.moveDown();
-      
-      doc.fontSize(18).text(`Event: ${event.title}`);
-      doc.fontSize(14).text(`Date: ${new Date(event.date).toLocaleDateString()}`);
-      doc.text(`Location: ${event.location}`);
-      doc.moveDown();
-      
-      doc.text(`Attendee: ${user.name}`);
-      doc.text(`Email: ${user.email}`);
-      doc.text(`Reservation ID: ${reservation._id}`);
-      
-      doc.moveDown();
-      doc.fontSize(10).text('Scan this at the entrance.', { align: 'center' });
+      // --- COLORS ---
+      const primaryColor = '#3b82f6'; // Blue-500
+      const secondaryColor = '#1e293b'; // Slate-800
+      const white = '#ffffff';
+
+      // --- BACKGROUND & BORDER ---
+      doc.rect(0, 0, doc.page.width, doc.page.height).fill(white);
+      doc
+        .lineWidth(10)
+        .rect(0, 0, doc.page.width, doc.page.height)
+        .stroke(primaryColor);
+
+      // --- HEADER ---
+      doc.rect(20, 20, doc.page.width - 40, 80).fill(primaryColor);
+
+      doc
+        .fillColor(white)
+        .fontSize(26)
+        .font('Helvetica-Bold')
+        .text('EVENT TICKET', 0, 45, {
+          align: 'center',
+          width: doc.page.width,
+        });
+
+      // --- EVENT DETAILS ---
+      const contentStartY = 130;
+      doc.fillColor(secondaryColor).fontSize(20).font('Helvetica-Bold');
+      doc.text(event.title, 40, contentStartY, { width: 340, align: 'center' });
+
+      doc.moveDown(0.5);
+      doc.fontSize(12).font('Helvetica').fillColor('#64748b'); // Slate-500
+      doc.text(
+        event.description ? event.description.substring(0, 100) + '...' : '',
+        { align: 'center' },
+      );
+
+      // Separator
+      doc.moveDown(1.5);
+      doc
+        .moveTo(40, doc.y)
+        .lineTo(380, doc.y)
+        .lineWidth(1)
+        .strokeColor('#e2e8f0')
+        .stroke();
+      doc.moveDown(1.5);
+
+      // --- INFO GRID ---
+      const leftColX = 50;
+      const rightColX = 220;
+      const rowHeight = 35;
+      let currentY = doc.y;
+
+      // Helper to draw rows
+      const drawRow = (label: string, value: string, y: number) => {
+        doc
+          .fontSize(10)
+          .font('Helvetica-Bold')
+          .fillColor('#94a3b8')
+          .text(label.toUpperCase(), leftColX, y);
+        doc
+          .fontSize(12)
+          .font('Helvetica')
+          .fillColor(secondaryColor)
+          .text(value, leftColX, y + 15);
+      };
+
+      const drawRowRight = (label: string, value: string, y: number) => {
+        doc
+          .fontSize(10)
+          .font('Helvetica-Bold')
+          .fillColor('#94a3b8')
+          .text(label.toUpperCase(), rightColX, y);
+        doc
+          .fontSize(12)
+          .font('Helvetica')
+          .fillColor(secondaryColor)
+          .text(value, rightColX, y + 15);
+      };
+
+      drawRow('Date', new Date(event.date).toLocaleDateString(), currentY);
+      drawRowRight(
+        'Time',
+        new Date(event.date).toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+        currentY,
+      );
+
+      currentY += rowHeight + 10;
+      drawRow('Location', event.location || 'Online', currentY);
+      drawRowRight('Attendee', user.name, currentY);
+
+      currentY += rowHeight + 10;
+      drawRow(
+        'Reservation ID',
+        String(reservation._id).substring(0, 8).toUpperCase(),
+        currentY,
+      );
 
       doc.end();
     });
