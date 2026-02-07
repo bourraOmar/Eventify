@@ -1,0 +1,42 @@
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  color: hsl(var(--foreground));
+}
+
+.card {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border) / 0.5);
+  border-radius: var(--radius);
+  padding: 2rem;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .formGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.fullWidth {
+  grid-column: 1 / -1;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1rem;
+}

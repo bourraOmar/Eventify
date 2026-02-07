@@ -1,0 +1,86 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  color: hsl(var(--foreground));
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+}
+
+.card {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border) / 0.5);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  transition: transform 0.2s;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  border-color: hsl(var(--primary) / 0.5);
+}
+
+.statValue {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: hsl(var(--primary));
+  margin-bottom: 0.5rem;
+}
+
+.statLabel {
+  color: hsl(var(--muted-foreground));
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.navGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.navCard {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  text-decoration: none;
+  color: hsl(var(--foreground));
+  transition: all 0.2s;
+}
+
+.navCard:hover {
+  background: hsl(var(--accent) / 0.05);
+  border-color: hsl(var(--accent));
+}
+
+.navIcon {
+  margin-bottom: 1rem;
+  color: hsl(var(--accent));
+}
+
+.navTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.navDesc {
+  color: hsl(var(--muted-foreground));
+  font-size: 0.875rem;
+}

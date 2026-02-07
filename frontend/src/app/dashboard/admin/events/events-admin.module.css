@@ -1,0 +1,65 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: hsl(var(--foreground));
+}
+
+.tableContainer {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border) / 0.5);
+  border-radius: var(--radius);
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 800px;
+}
+
+.th {
+  background: hsl(var(--muted) / 0.5);
+  padding: 1rem;
+  text-align: left;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: hsl(var(--muted-foreground));
+}
+
+.td {
+  padding: 1rem;
+  border-top: 1px solid hsl(var(--border) / 0.5);
+  font-size: 0.9375rem;
+  color: hsl(var(--foreground));
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.status {
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  display: inline-block;
+}
+
+.statusPublished { background: hsl(var(--secondary) / 0.2); color: hsl(var(--secondary)); }
+.statusDraft { background: hsl(var(--muted)); color: hsl(var(--muted-foreground)); }
+.statusCanceled { background: hsl(var(--destructive) / 0.2); color: hsl(var(--destructive)); }
