@@ -28,6 +28,11 @@ export class EventsController {
     return this.eventsService.findAllPublished();
   }
 
+  @Get(':id/seats')
+  async getSeats(@Param('id') id: string) {
+    return this.eventsService.getSeats(id);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.eventsService.findOne(id);

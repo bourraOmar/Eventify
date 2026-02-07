@@ -161,6 +161,7 @@ export class ReservationsService {
   }
 
   // Logic to generate PDF
+  // Logic to generate PDF
   async generateTicket(reservationId: string, userId: string): Promise<Buffer> {
     const reservation = await this.reservationModel
       .findOne({ _id: reservationId, user: userId })
@@ -168,9 +169,13 @@ export class ReservationsService {
       .populate('user')
       .exec();
 
-    if (!reservation) throw new NotFoundException('Reservation not found');
+    if (!reservation) {
+      throw new NotFoundException('Reservation not found');
+    }
 
-    if (reservation.status !== ReservationStatus.CONFIRMED) {
+    // Cast explicitly to check status
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    if ((reservation as any).status !== ReservationStatus.CONFIRMED) {
       throw new BadRequestException(
         'Ticket is only available for CONFIRMED reservations',
       );
@@ -180,36 +185,111 @@ export class ReservationsService {
     const user = reservation.user as unknown as User;
 
     return new Promise((resolve) => {
-      const doc = new PDFDocument({ size: 'A4' });
+      const doc = new PDFDocument({ size: 'A5', margin: 30 }); // A5 size is better for tickets
       const buffers: Buffer[] = [];
 
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-      doc.on('data', buffers.push.bind(buffers));
+      doc.on('data', buffers.push.bind(buffers)); // eslint-disable-line @typescript-eslint/no-unsafe-argument
+      doc.on('end', () => resolve(Buffer.concat(buffers)));
 
-      doc.on('end', () => {
-        resolve(Buffer.concat(buffers));
-      });
+      // --- COLORS ---
+      const primaryColor = '#3b82f6'; // Blue-500
+      const secondaryColor = '#1e293b'; // Slate-800
+      const white = '#ffffff';
 
-      // Disable linting for entire block to avoid spamming ignores for every PDFKit line
+      // --- BACKGROUND & BORDER ---
+      doc.rect(0, 0, doc.page.width, doc.page.height).fill(white);
+      doc
+        .lineWidth(10)
+        .rect(0, 0, doc.page.width, doc.page.height)
+        .stroke(primaryColor);
 
-      doc.fontSize(25).text('EVENT TICKET', { align: 'center' });
-      doc.moveDown();
-
-      doc.fontSize(18).text(`Event: ${event.title}`);
+      // --- HEADER ---
+      doc.rect(20, 20, doc.page.width - 40, 80).fill(primaryColor);
 
       doc
-        .fontSize(14)
-        .text(`Date: ${new Date(event.date).toLocaleDateString()}`);
-      doc.text(`Location: ${event.location}`);
-      doc.moveDown();
+        .fillColor(white)
+        .fontSize(26)
+        .font('Helvetica-Bold')
+        .text('EVENT TICKET', 0, 45, {
+          align: 'center',
+          width: doc.page.width,
+        });
 
-      doc.text(`Attendee: ${user.name}`);
-      doc.text(`Email: ${user.email}`);
-      // Cast ObjectId safely to string
-      doc.text(`Reservation ID: ${String(reservation._id)}`);
+      // --- EVENT DETAILS ---
+      const contentStartY = 130;
+      doc.fillColor(secondaryColor).fontSize(20).font('Helvetica-Bold');
+      doc.text(event.title, 40, contentStartY, { width: 340, align: 'center' });
 
-      doc.moveDown();
-      doc.fontSize(10).text('Scan this at the entrance.', { align: 'center' });
+      doc.moveDown(0.5);
+      doc.fontSize(12).font('Helvetica').fillColor('#64748b'); // Slate-500
+      doc.text(
+        event.description ? event.description.substring(0, 100) + '...' : '',
+        { align: 'center' },
+      );
+
+      // Separator
+      doc.moveDown(1.5);
+      doc
+        .moveTo(40, doc.y)
+        .lineTo(380, doc.y)
+        .lineWidth(1)
+        .strokeColor('#e2e8f0')
+        .stroke();
+      doc.moveDown(1.5);
+
+      // --- INFO GRID ---
+      const leftColX = 50;
+      const rightColX = 220;
+      const rowHeight = 35;
+      let currentY = doc.y;
+
+      // Helper to draw rows
+      const drawRow = (label: string, value: string, y: number) => {
+        doc
+          .fontSize(10)
+          .font('Helvetica-Bold')
+          .fillColor('#94a3b8')
+          .text(label.toUpperCase(), leftColX, y);
+        doc
+          .fontSize(12)
+          .font('Helvetica')
+          .fillColor(secondaryColor)
+          .text(value, leftColX, y + 15);
+      };
+
+      const drawRowRight = (label: string, value: string, y: number) => {
+        doc
+          .fontSize(10)
+          .font('Helvetica-Bold')
+          .fillColor('#94a3b8')
+          .text(label.toUpperCase(), rightColX, y);
+        doc
+          .fontSize(12)
+          .font('Helvetica')
+          .fillColor(secondaryColor)
+          .text(value, rightColX, y + 15);
+      };
+
+      drawRow('Date', new Date(event.date).toLocaleDateString(), currentY);
+      drawRowRight(
+        'Time',
+        new Date(event.date).toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+        currentY,
+      );
+
+      currentY += rowHeight + 10;
+      drawRow('Location', event.location || 'Online', currentY);
+      drawRowRight('Attendee', user.name, currentY);
+
+      currentY += rowHeight + 10;
+      drawRow(
+        'Reservation ID',
+        String(reservation._id).substring(0, 8).toUpperCase(),
+        currentY,
+      );
 
       doc.end();
     });

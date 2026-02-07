@@ -46,4 +46,12 @@ export class EventsService {
   async remove(id: string): Promise<Event | null> {
     return this.eventModel.findByIdAndDelete(id).exec();
   }
+
+  async getSeats(id: string): Promise<number> {
+    const event = await this.eventModel.findById(id).exec();
+    if (!event) {
+      throw new NotFoundException(`Event #${id} not found`);
+    }
+    return Math.max(0, event.capacity - (event.reservedPlaces || 0));
+  }
 }

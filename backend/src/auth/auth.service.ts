@@ -26,14 +26,28 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    await this.userModel.create({
+    const newUser = await this.userModel.create({
       name,
       email,
       password: hashedPassword,
       role: role || 'participant',
     });
 
-    return { message: 'User registered successfully' };
+    // Automatically log in the user after registration
+    const payload = {
+      sub: newUser._id,
+      email: newUser.email,
+      role: newUser.role,
+    };
+    return {
+      access_token: this.jwtService.sign(payload),
+      user: {
+        id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+      },
+    };
   }
 
   async login(loginDto: LoginDto) {
